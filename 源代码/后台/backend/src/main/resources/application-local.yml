@@ -1,0 +1,60 @@
+server:
+  port: 8080
+  
+spring:
+  application:
+    name: equipment-repair-system
+  
+  # PostgreSQL数据源 (本地安装)
+  datasource:
+    url: jdbc:postgresql://localhost:5432/repair_db
+    username: postgres
+    password: 123456
+    driver-class-name: org.postgresql.Driver
+  
+  # Redis配置 (本地Docker)
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 4
+  
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# MyBatis-Plus配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.equipment.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# Dify平台配置 (Mock模式 - 本地开发)
+dify:
+  url: http://localhost:8080
+  dataset:
+    api-key: mock-dataset-api-key
+  status:
+    api-key: mock-app-api-key
+    dataset-api-key: mock-dataset-api-key
+  case-dataset-id: mock-case-dataset-id
+  mock:
+    enabled: true
+
+# JWT配置
+jwt:
+  secret: difyai1234567890abcdefghijklmnopqrstuvwxyz123456
+  expire-hours: 24
+
+# 文件上传目录
+upload:
+  dir: ./uploads
+# 数据传输加密配置（生产环境开启）
+crypto:
+  enabled: false
+  secret-key: EquipmentRepair2026SecretKey!@#$
+

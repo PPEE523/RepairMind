@@ -12,11 +12,6 @@
 **/target/
 **/artifacts/
 **/.cache/
-**/application-prod.yml
-**/application-dev.yml
-**/application-local.yml
-**/application-139.yml
-!**/application-*.example.yml
 
 # Runtime data
 **/logs/

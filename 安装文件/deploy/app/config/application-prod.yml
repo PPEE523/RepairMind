@@ -1,0 +1,99 @@
+server:
+  port: 8080
+  # 服务器基础URL，用于生成文件的绝对地址传给Dify
+  base-url: ${SERVER_BASE_URL:http://127.0.0.1:8080}
+
+spring:
+  application:
+    name: equipment-repair-system
+  
+  # PostgreSQL数据源 (线上)
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://host.docker.internal:5432/repair_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:difyai123456}
+    driver-class-name: org.postgresql.Driver
+
+  # Redis配置 (本地Docker)
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:host.docker.internal}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
+      password: ${SPRING_DATA_REDIS_PASSWORD:}
+      database: ${SPRING_DATA_REDIS_DATABASE:4}
+
+  
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+# MyBatis-Plus配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.example.equipment.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# Dify平台配置 (dify-spring-boot-starter)
+dify:
+  url: http://139.186.165.210:3000
+  dataset:
+    api-key: dataset-w8hZrvq71RACutxpg3SoEdua
+    id: 2ea0cae5-86fe-4ea2-a393-31863c878177   # 默认知识库
+    case-id: 545b6158-5a40-442e-b96f-784b0716da21  # 案例库
+    # 按模块的可见知识库白名单（逗号分隔），配置后前端无需感知具体ID
+    visible-ids:
+      knowledge-management: 8a86d71c-0938-4ad1-beea-ba498b4fc83c,2ea0cae5-86fe-4ea2-a393-31863c878177
+      case-audit: 545b6158-5a40-442e-b96f-784b0716da21  #案例库
+      sop-workflow: 8a86d71c-0938-4ad1-beea-ba498b4fc83c  #sop知识库
+  status:
+    # 作业指引
+    zyzy-api-key: app-CBHZTVO5twVBEGxNbtySY2aq
+    # 诊断检测
+    zdjc-api-key: app-xbTbMRQvUTEYc3RkondVxbwT
+    dataset-api-key: dataset-w8hZrvq71RACutxpg3SoEdua
+  # SOP流程生成与测试（SOP功能新增）  图片上的这个轮胎如何更换
+  app:
+    api-key: app-77mPOjVwg6ulBjkirognUTUg  #SOP 流程生成
+    test-api-key: app-CBHZTVO5twVBEGxNbtySY2aq  # 流程判断的
+    summary-api-key: app-c9yPdWZk03GBbSxhqX6EP03h
+  mock:
+    enabled: false
+  server:
+    email: admin@163.com
+    password: difyai123456
+
+# JWT配置
+jwt:
+  secret: difyai1234567890abcdefghijklmnopqrstuvwxyz123456
+  expire-hours: 24
+
+# 文件上传目录
+upload:
+  dir: ./uploads
+  # 视频文件大小限制（MB）
+  max-video-size-mb: 50
+
+# 日志配置
+# 数据传输加密配置（生产环境开启）
+crypto:
+  enabled: false
+  secret-key: EquipmentRepair2026SecretKey!@#$
+
+
+# 多模态检索对话配置
+chat:
+  api-key: app-TPriYiwffcxZ6NF9nY4CMbk8
+  max-rounds: 10
+  max-file-size-mb: 50
+  allowed-image-types: jpg,jpeg,png,gif,webp,svg
+  allowed-video-types: mp4,mov,mpeg,webm
+  allowed-audio-types: mp3,m4a,wav,webm,mpga
+  allowed-file-types: txt,md,pdf,xls,xlsx,doc,docx
+  enable-image-upload: true
+  enable-video-upload: true
+  enable-audio-upload: true
+  enable-file-upload: true
