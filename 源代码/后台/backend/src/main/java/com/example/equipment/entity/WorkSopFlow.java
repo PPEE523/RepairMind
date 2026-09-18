@@ -17,6 +17,9 @@ public class WorkSopFlow {
     /** 流程名称 */
     private String name;
 
+    /** 任务分类 */
+    private String category;
+
     /** 来源文档ID（Dify知识库文档） */
     private String sourceDocumentId;
 

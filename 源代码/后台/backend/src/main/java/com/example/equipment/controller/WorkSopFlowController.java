@@ -12,6 +12,7 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,7 @@ public class WorkSopFlowController {
      * 生成SOP流程 - 从知识库文档生成
      */
     @PostMapping("/generate")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR')")
     @OperLog(module = "SOP流程管理", operType = "生成SOP", description = "从知识库文档生成SOP流程")
     public Result<WorkSopFlow> generateSop(
             @RequestBody Map<String, String> request,
@@ -44,6 +46,7 @@ public class WorkSopFlowController {
         String documentId = request.get("documentId");
         String documentName = request.get("documentName");
         String datasetId = request.get("datasetId");
+        String category = request.getOrDefault("category", "其他");
 
         if (documentId == null || documentName == null || datasetId == null) {
             return Result.error(400, "参数不完整：需要 documentId, documentName, datasetId");
@@ -52,6 +55,8 @@ public class WorkSopFlowController {
         String token = httpRequest.getHeader("Authorization");
         Long userId = jwtUtils.getUserIdFromToken(token.replace("Bearer ", ""));
         WorkSopFlow sopFlow = workSopFlowService.generateSopFlow(documentId, documentName, datasetId, userId);
+        sopFlow.setCategory(category);
+        workSopFlowService.updateById(sopFlow);
         return Result.success(sopFlow);
     }
 
@@ -85,6 +90,7 @@ public class WorkSopFlowController {
      * 修改SOP流程（编辑步骤内容）
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR')")
     @OperLog(module = "SOP流程管理", operType = "修改SOP", description = "修改SOP流程步骤")
     public Result<WorkSopFlow> updateSopFlow(
             @PathVariable Long id,
@@ -96,6 +102,9 @@ public class WorkSopFlowController {
 
         if (request.containsKey("name")) {
             sopFlow.setName((String) request.get("name"));
+        }
+        if (request.containsKey("category")) {
+            sopFlow.setCategory((String) request.get("category"));
         }
         if (request.containsKey("stepJson")) {
             sopFlow.setStepJson((String) request.get("stepJson"));
@@ -117,6 +126,7 @@ public class WorkSopFlowController {
      * 删除SOP流程（软删除：status → archived）
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'AUDITOR')")
     @OperLog(module = "SOP流程管理", operType = "删除SOP", description = "删除SOP流程")
     public Result<Void> deleteSopFlow(@PathVariable Long id) {
         WorkSopFlow sopFlow = workSopFlowService.getById(id);

@@ -3,11 +3,11 @@ package com.example.equipment.controller;
 import com.example.equipment.dto.MenuDTO;
 import com.example.equipment.dto.Result;
 import com.example.equipment.entity.SysMenu;
-import com.example.equipment.security.SecurityUtils;
 import com.example.equipment.service.SysMenuService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @RestController
 @RequestMapping("/api/menu")
+@PreAuthorize("hasRole('ADMIN')")
 public class MenuController {
 
     @Resource
@@ -29,18 +30,12 @@ public class MenuController {
 
     @GetMapping("/list")
     public Result<List<SysMenu>> getMenuList() {
-        if (!SecurityUtils.isAdmin()) {
-            return Result.error(403, "无权限访问");
-        }
         List<SysMenu> menus = sysMenuService.list();
         return Result.success(menus);
     }
 
     @GetMapping("/{id}")
     public Result<SysMenu> getMenuById(@PathVariable Long id) {
-        if (!SecurityUtils.isAdmin()) {
-            return Result.error(403, "无权限访问");
-        }
         SysMenu menu = sysMenuService.getById(id);
         if (menu == null) {
             return Result.error(404, "菜单不存在");
@@ -50,9 +45,6 @@ public class MenuController {
 
     @PostMapping
     public Result<Void> saveMenu(@RequestBody SysMenu menu) {
-        if (!SecurityUtils.isAdmin()) {
-            return Result.error(403, "无权限操作");
-        }
         sysMenuService.save(menu);
         log.info("新增菜单: name={}", menu.getName());
         return Result.success();
@@ -60,9 +52,6 @@ public class MenuController {
 
     @PutMapping
     public Result<Void> updateMenu(@RequestBody SysMenu menu) {
-        if (!SecurityUtils.isAdmin()) {
-            return Result.error(403, "无权限操作");
-        }
         sysMenuService.updateById(menu);
         log.info("更新菜单: id={}, name={}", menu.getId(), menu.getName());
         return Result.success();
@@ -70,9 +59,6 @@ public class MenuController {
 
     @DeleteMapping("/{id}")
     public Result<Void> deleteMenu(@PathVariable Long id) {
-        if (!SecurityUtils.isAdmin()) {
-            return Result.error(403, "无权限操作");
-        }
         sysMenuService.removeById(id);
         log.info("删除菜单: id={}", id);
         return Result.success();

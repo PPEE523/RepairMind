@@ -15,9 +15,12 @@
           </el-button>
         </div>
       </template>
-      <div v-if="sopFlowList.length" class="sop-list">
+      <el-select v-model="sopCategory" placeholder="按分类筛选" clearable size="small" style="width: 160px; margin-bottom: 12px;">
+        <el-option v-for="category in sopCategories" :key="category" :label="category" :value="category" />
+      </el-select>
+      <div v-if="filteredSopFlowList.length" class="sop-list">
         <div
-          v-for="item in sopFlowList"
+          v-for="item in filteredSopFlowList"
           :key="item.id"
           class="sop-item"
           :class="{ active: selectedSopFlow?.id === item.id }"
@@ -25,7 +28,10 @@
         >
           <div class="sop-item-header">
             <span class="sop-name">{{ item.name }}</span>
-            <el-tag size="small">{{ item.totalSteps }} 步</el-tag>
+            <span>
+              <el-tag size="small" type="info">{{ item.category || '其他' }}</el-tag>
+              <el-tag size="small">{{ item.totalSteps }} 步</el-tag>
+            </span>
           </div>
           <div class="sop-item-time">{{ formatTime(item.createTime) }}</div>
           <div class="sop-item-actions">
@@ -217,6 +223,12 @@
     <div v-if="genState.documents.length === 0 && !genState.loadingDocs" style="color:#999; text-align:center; padding:20px;">
       该知识库暂无文档
     </div>
+    <div class="gen-section">
+      <h4><el-tag type="primary">2</el-tag> 任务分类</h4>
+      <el-select v-model="genState.category" style="width: 100%" placeholder="请选择任务分类">
+        <el-option v-for="category in sopCategoryOptions" :key="category" :label="category" :value="category" />
+      </el-select>
+    </div>
     <div
       v-for="doc in genState.documents"
       :key="doc.id"
@@ -249,6 +261,11 @@
           <el-form label-width="80px" size="default">
             <el-form-item label="流程名称">
               <el-input v-model="editState.flow.name" placeholder="请输入流程名称" />
+            </el-form-item>
+            <el-form-item label="任务分类">
+              <el-select v-model="editState.flow.category" style="width: 100%">
+                <el-option v-for="category in sopCategoryOptions" :key="category" :label="category" :value="category" />
+              </el-select>
             </el-form-item>
           </el-form>
         </div>
@@ -317,7 +334,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import request from '@/utils/request'
 import { sanitizeHtml } from '@/utils/sanitize'
@@ -337,6 +354,12 @@ import {
 // ============ SOP流程管理 ============
 const sopFlowList = ref<any[]>([])
 const selectedSopFlow = ref<any>(null)
+const sopCategory = ref('')
+const sopCategoryOptions = ['拆卸维修', '故障诊断', '安装调试', '安全检查', '保养维护', '其他']
+const sopCategories = computed(() => Array.from(new Set(sopFlowList.value.map(item => item.category || '其他'))))
+const filteredSopFlowList = computed(() => sopCategory.value
+  ? sopFlowList.value.filter(item => (item.category || '其他') === sopCategory.value)
+  : sopFlowList.value)
 
 // 生成SOP对话框 - 通过后端白名单获取知识库ID
 const showGenerateDialog = ref(false)
@@ -344,6 +367,7 @@ const genState = reactive({
   datasetId: '',
   documents: [] as any[],
   selectedDoc: null as any,
+  category: '其他',
   loadingDocs: false,
   generating: false
 })
@@ -397,6 +421,7 @@ async function openGenerateDialog() {
   genState.documents = []
   genState.selectedDoc = null
   genState.datasetId = ''
+  genState.category = '其他'
   genState.loadingDocs = true
   try {
     // 1. 通过后端白名单获取知识库ID
@@ -430,7 +455,8 @@ async function doGenerateSop() {
     await generateSopFlow({
       documentId: doc.id,
       documentName: doc.name || doc.id,
-      datasetId: genState.datasetId
+      datasetId: genState.datasetId,
+      category: genState.category
     })
     ElMessage.success('SOP流程生成成功！')
     showGenerateDialog.value = false
@@ -715,6 +741,7 @@ async function saveEditSop() {
     const cleanSteps = editState.editSteps.map(({ _key, ...step }: any) => step)
     await updateSopFlow(editState.flow.id, {
       name: editState.flow.name,
+      category: editState.flow.category || '其他',
       stepJson: JSON.stringify(cleanSteps),
       totalSteps: cleanSteps.length
     })

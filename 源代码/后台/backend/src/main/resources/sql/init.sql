@@ -146,6 +146,7 @@ DROP TABLE IF EXISTS work_sop_flow CASCADE;
 CREATE TABLE work_sop_flow (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
+    category VARCHAR(50) DEFAULT '其他',
     source_document_id VARCHAR(100),
     source_document_name VARCHAR(200),
     dataset_id VARCHAR(100),
@@ -160,6 +161,7 @@ CREATE TABLE work_sop_flow (
 COMMENT ON TABLE work_sop_flow IS 'SOP流程表（AI生成）';
 COMMENT ON COLUMN work_sop_flow.id IS '流程ID';
 COMMENT ON COLUMN work_sop_flow.name IS '流程名称';
+COMMENT ON COLUMN work_sop_flow.category IS '任务分类';
 COMMENT ON COLUMN work_sop_flow.source_document_id IS '来源文档ID';
 COMMENT ON COLUMN work_sop_flow.source_document_name IS '来源文档名称';
 COMMENT ON COLUMN work_sop_flow.dataset_id IS '来源知识库ID';

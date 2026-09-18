@@ -1,11 +1,12 @@
-version: '3.8'
 networks:
   app-net:
     driver: bridge
 
 services:
   backend:
-    build: ./docker/backend
+    build:
+      context: ../../../源代码/后台/backend
+      dockerfile: Dockerfile
     image: biz-backend:base
     container_name: biz-backend
     restart: always
@@ -21,14 +22,12 @@ services:
       SERVER_BASE_URL: ${SERVER_BASE_URL:-http://host.docker.internal:8080}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://host.docker.internal:5432/repair_db}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-difyai123456}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?SPRING_DATASOURCE_PASSWORD must be set in .env}
       SPRING_DATA_REDIS_HOST: ${SPRING_DATA_REDIS_HOST:-host.docker.internal}
       SPRING_DATA_REDIS_PORT: ${SPRING_DATA_REDIS_PORT:-6379}
       SPRING_DATA_REDIS_PASSWORD: ${SPRING_DATA_REDIS_PASSWORD:-}
       SPRING_DATA_REDIS_DATABASE: ${SPRING_DATA_REDIS_DATABASE:-4}
     volumes:
-      # 后端jar单独挂载
-      - ./artifacts/backend:/data
       # 独立配置文件夹挂载到Spring Boot默认搜索路径
       - ./config:/app/config
       # 日志持久
@@ -37,7 +36,9 @@ services:
       - ./volumes/uploads:/app/uploads
 
   frontend:
-    build: ./docker/frontend
+    build:
+      context: ../../../源代码/前端
+      dockerfile: Dockerfile
     image: biz-frontend:base
     container_name: biz-frontend
     restart: always
@@ -46,6 +47,3 @@ services:
       - backend
     ports:
       - "80:80"
-    volumes:
-      # 前端dist单独挂载到nginx网页目录
-      - ./artifacts/frontend/dist:/usr/share/nginx/html

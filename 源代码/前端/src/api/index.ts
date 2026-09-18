@@ -181,12 +181,13 @@ export function generateSopFlow(data: {
   documentId: string
   documentName: string
   datasetId: string
+  category?: string
 }) {
   return request.post('/workflow/sop/generate', data)
 }
 
 // 修改SOP流程
-export function updateSopFlow(id: number, data: { name?: string; stepJson?: string; totalSteps?: number }) {
+export function updateSopFlow(id: number, data: { name?: string; category?: string; stepJson?: string; totalSteps?: number }) {
   return request.put(`/workflow/sop/${id}`, data)
 }
 

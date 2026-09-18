@@ -18,7 +18,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -100,16 +101,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         // 从数据库查询用户角色信息
         SysUser sysUser = sysUserService.getById(userId);
-        if (sysUser != null) {
-            userContext.setRoleId(sysUser.getRoleId());
-            userContext.setDeptId(sysUser.getDeptId());
+        if (sysUser == null || !Integer.valueOf(1).equals(sysUser.getStatus())) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"code\":401,\"msg\":\"用户不存在或已被禁用\",\"permission\":false}");
+            return;
+        }
+        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+        userContext.setRoleId(sysUser.getRoleId());
+        userContext.setDeptId(sysUser.getDeptId());
+        if (Long.valueOf(1L).equals(sysUser.getRoleId())) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        } else if (Long.valueOf(2L).equals(sysUser.getRoleId())) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_AUDITOR"));
         }
 
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(
                         userContext,
                         null,
-                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                        authorities
                 );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);

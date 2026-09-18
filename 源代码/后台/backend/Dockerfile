@@ -1,10 +1,18 @@
-FROM eclipse-temurin:17-jre
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /build
+COPY pom.xml .
+RUN mvn -B dependency:go-offline
+COPY src ./src
+RUN mvn -B -DskipTests -Dspring-boot.repackage.skip=true package \
+    && mvn -B dependency:copy-dependencies -DincludeScope=runtime -DoutputDirectory=target/lib
 
-# 安装 ffmpeg（视频截帧用），Docker 层缓存：只要基础镜像不变就不会重新下载
-RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg && rm -rf /var/lib/apt/lists/*
-
+FROM eclipse-temurin:21-jre
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV TZ=Asia/Shanghai
+COPY --from=build /build/target/*.jar /app/app.jar
+COPY --from=build /build/target/lib /app/lib
 EXPOSE 8080
-# 只预留启动命令，jar靠外部挂载
-ENTRYPOINT ["java","-Xms512M","-Xmx1G","-jar","/data/app.jar"]
+ENTRYPOINT ["java","-Xms512M","-Xmx1G","-cp","/app/app.jar:/app/lib/*","com.example.equipment.EquipmentRepairApplication"]

@@ -51,7 +51,6 @@ public class AuthController {
     public Result<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         log.info("=== 登录请求开始 ===");
         log.info("请求用户名: {}", request.getUsername());
-        log.info("请求密码: {}", request.getPassword());
         
         // 检查登录失败次数
         String failKey = LOGIN_FAIL_PREFIX + request.getUsername();
@@ -63,8 +62,6 @@ public class AuthController {
         }
 
         SysUser user = sysUserService.findByUsername(request.getUsername());
-        log.info("从数据库查询用户: {}", user);
-        
         if (user == null) {
             log.warn("用户不存在: {}", request.getUsername());
             incrementFailCount(failKey);
@@ -73,8 +70,6 @@ public class AuthController {
 
         log.info("用户信息 - ID: {}, 用户名: {}, 角色ID: {}, 状态: {}", 
                 user.getId(), user.getUsername(), user.getRoleId(), user.getStatus());
-        log.info("数据库密码哈希: {}", user.getPassword());
-        
         boolean passwordMatch = passwordEncoder.matches(request.getPassword(), user.getPassword());
         log.info("密码匹配结果: {}", passwordMatch);
         
@@ -103,7 +98,6 @@ public class AuthController {
 
         // 生成Token
         String token = jwtUtils.generateToken(user.getId(), user.getUsername());
-        log.info("生成的Token: {}", token);
 
         // 将Token存入Redis
         String cacheKey = TOKEN_CACHE_PREFIX + user.getId();
