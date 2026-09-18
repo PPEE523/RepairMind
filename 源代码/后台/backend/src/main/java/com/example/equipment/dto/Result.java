@@ -1,0 +1,40 @@
+package com.example.equipment.dto;
+
+import lombok.Data;
+
+@Data
+public class Result<T> {
+
+    private Integer code;
+
+    private String msg;
+
+    private T data;
+
+    private Boolean permission;
+
+    public static <T> Result<T> success(T data) {
+        Result<T> result = new Result<>();
+        result.setCode(200);
+        result.setMsg("success");
+        result.setData(data);
+        result.setPermission(true);
+        return result;
+    }
+
+    public static <T> Result<T> success() {
+        return success(null);
+    }
+
+    public static <T> Result<T> error(Integer code, String msg) {
+        Result<T> result = new Result<>();
+        result.setCode(code);
+        result.setMsg(msg);
+        result.setPermission(false);
+        return result;
+    }
+
+    public static <T> Result<T> error(String msg) {
+        return error(500, msg);
+    }
+}

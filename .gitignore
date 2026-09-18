@@ -1,0 +1,78 @@
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE and editor files
+.idea/
+.vscode/
+*.iml
+*.suo
+*.user
+*.userossc
+*.code-workspace
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.local
+*.secret
+*.key
+*.pem
+*.p12
+*.jks
+
+# Python tooling used for local scripts
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+
+# Node/Vite frontend dependencies and build output
+**/node_modules/
+**/.vite/
+**/dist/
+**/coverage/
+**/*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Java/Maven backend build output
+**/target/
+*.class
+*.jar
+*.war
+*.nar
+hs_err_pid*
+
+# Application logs and runtime data
+**/logs/
+**/*.log
+**/volumes/uploads/
+**/uploads/
+
+# Packaged deployment artifacts
+安装文件/deploy/app/artifacts/
+安装文件/deploy/app/volumes/
+
+# Deployment-local configuration containing credentials or service endpoints
+安装文件/deploy/app/.env
+安装文件/deploy/app/config/application-prod.yml
+源代码/前端/.env
+源代码/后台/backend/src/main/resources/application-prod.yml
+源代码/后台/backend/src/main/resources/application-139.yml
+源代码/后台/backend/src/main/resources/application-local.yml
+
+# Local PostgreSQL/Redis/Docker data
+*.dump
+*.backup
+*.sql.gz
+docker-data/
+.docker/
