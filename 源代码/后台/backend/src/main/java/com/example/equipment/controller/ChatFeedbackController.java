@@ -1,6 +1,7 @@
 package com.example.equipment.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.equipment.dto.ChatFeedbackStatsVO;
 import com.example.equipment.dto.ChatFeedbackVO;
 import com.example.equipment.dto.Result;
@@ -138,7 +139,10 @@ public class ChatFeedbackController {
         }
         wrapper.orderByDesc(ChatFeedback::getFeedbackTime);
 
-        List<ChatFeedback> feedbacks = chatFeedbackMapper.selectList(wrapper);
+        // 真实分页：使用分页插件按 pageNum/pageSize 查询，而非返回全部
+        Page<ChatFeedback> page = new Page<>(pageNum, pageSize);
+        Page<ChatFeedback> resultPage = chatFeedbackMapper.selectPage(page, wrapper);
+        List<ChatFeedback> feedbacks = resultPage.getRecords();
 
         List<ChatFeedbackVO> voList = feedbacks.stream().map(fb -> {
             ChatFeedbackVO vo = buildFeedbackVO(fb);
@@ -163,44 +167,52 @@ public class ChatFeedbackController {
 
     /**
      * 处理错误反馈 - 更新分段内容并标记已处理
+     * 当不传 segmentId 时，仅将反馈状态标记为已处理
      */
     @PutMapping("/process")
     public Result<Void> processFeedback(@RequestBody Map<String, Object> params) {
-        Long chatFeedbackId = Long.valueOf(params.get("chatFeedbackId").toString());
+        Object idValue = params.get("chatFeedbackId");
+        if (idValue == null) {
+            return Result.error("缺少chatFeedbackId参数");
+        }
+        Long chatFeedbackId = Long.valueOf(idValue.toString());
         String segmentId = (String) params.get("segmentId");
         String datasetId = (String) params.get("datasetId");
         String documentId = (String) params.get("documentId");
         String content = (String) params.get("content");
 
-        // 1. 更新Dify中的分段内容
-        try {
-            log.info("开始更新dify中知识库中的内容---------------------------------------------");
-            difyKnowledgeService.updateSegment(datasetId, documentId, segmentId, content, null, null, null);
-        } catch (Exception e) {
-            log.warn("更新Dify分段内容失败: {}", e.getMessage());
-            return Result.error("更新Dify分段内容失败: " + e.getMessage());
-        }
+        // 1. 仅在携带分段信息时更新 Dify 分段和本地分段内容
+        if (segmentId != null && !segmentId.isEmpty()) {
+            try {
+                log.info("开始更新dify中知识库中的内容---------------------------------------------");
+                difyKnowledgeService.updateSegment(datasetId, documentId, segmentId, content, null, null, null);
+            } catch (Exception e) {
+                log.warn("更新Dify分段内容失败: {}", e.getMessage());
+                return Result.error("更新Dify分段内容失败: " + e.getMessage());
+            }
 
-        // 2. 更新本地chat_segment表中的content
-        ChatSegment segment = chatSegmentMapper.selectOne(
-                new LambdaQueryWrapper<ChatSegment>()
-                        .eq(ChatSegment::getSegmentId, segmentId)
-                        .last("LIMIT 1")
-        );
-        if (segment != null) {
-            segment.setContent(content);
-            chatSegmentMapper.updateById(segment);
+            // 2. 更新本地chat_segment表中的content
+            ChatSegment segment = chatSegmentMapper.selectOne(
+                    new LambdaQueryWrapper<ChatSegment>()
+                            .eq(ChatSegment::getSegmentId, segmentId)
+                            .last("LIMIT 1")
+            );
+            if (segment != null) {
+                segment.setContent(content);
+                chatSegmentMapper.updateById(segment);
+            }
         }
 
         // 3. 更新chat_feedback状态为processed（已处理）
         ChatFeedback feedback = chatFeedbackMapper.selectById(chatFeedbackId);
-        if (feedback != null) {
-            feedback.setFeedbackStatus("processed");
-            feedback.setFeedbackTime(LocalDateTime.now());
-            chatFeedbackMapper.updateById(feedback);
+        if (feedback == null) {
+            return Result.error("反馈记录不存在");
         }
+        feedback.setFeedbackStatus("processed");
+        // 保留原始反馈时间，不再覆盖为当前时间，避免反馈时间和趋势统计失真
+        chatFeedbackMapper.updateById(feedback);
 
-        log.info("处理错误反馈: chatFeedbackId={}, segmentId={}, 已更新分段内容并标记为processed", chatFeedbackId, segmentId);
+        log.info("处理错误反馈: chatFeedbackId={}, segmentId={}, 已标记为processed", chatFeedbackId, segmentId);
         return Result.success();
     }
 

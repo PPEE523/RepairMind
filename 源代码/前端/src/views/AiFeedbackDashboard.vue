@@ -233,7 +233,7 @@
               </div>
             </el-tab-pane>
           </el-tabs>
-          <el-empty v-else description="无命中文档" />
+          <el-empty v-else description="无命中文档，可直接标记为已处理" />
           <div class="process-actions">
             <el-button type="success" @click="handleMarkProcessed" :loading="markingProcessed">
               标记为已处理
@@ -322,7 +322,8 @@ const fetchFeedbackList = async () => {
 const initCharts = () => {
   // 饼图
   if (typeChartRef.value) {
-    typeChart = echarts.init(typeChartRef.value)
+    // 复用已有实例，避免重复 init
+    typeChart = echarts.getInstanceByDom(typeChartRef.value) || echarts.init(typeChartRef.value)
     typeChart.setOption({
       tooltip: { trigger: 'item' },
       legend: { orient: 'vertical', left: 'left' },
@@ -344,7 +345,8 @@ const initCharts = () => {
 
   // 趋势图 - 使用真实数据
   if (trendChartRef.value) {
-    trendChart = echarts.init(trendChartRef.value)
+    // 复用已有实例，避免重复 init
+    trendChart = echarts.getInstanceByDom(trendChartRef.value) || echarts.init(trendChartRef.value)
     const dailyStats = stats.value.dailyStats || []
     const days = dailyStats.map((d: any) => d.date)
     const correctData = dailyStats.map((d: any) => d.correctCount || 0)
@@ -437,19 +439,16 @@ const handleSaveSegment = async (seg: any, doc: any) => {
 const handleMarkProcessed = async () => {
   markingProcessed.value = true
   try {
-    // 使用processChatFeedback接口，只更新状态不修改分段
-    // 取第一个文档的第一个分段作为参数（仅用于标记状态）
+    // 有命中文档时携带分段信息；无命中文档时只传反馈ID，由后端仅更新状态
     const firstDoc = processData.value.documentResources?.[0]
     const firstSeg = firstDoc?.segments?.[0]
-    if (firstDoc && firstSeg) {
-      await processChatFeedback({
-        chatFeedbackId: processData.value.id,
-        segmentId: firstSeg.segmentId,
-        datasetId: firstDoc.datasetId,
-        documentId: firstDoc.documentId,
-        content: firstSeg.content || ''
-      })
-    }
+    await processChatFeedback({
+      chatFeedbackId: processData.value.id,
+      segmentId: firstSeg?.segmentId,
+      datasetId: firstDoc?.datasetId,
+      documentId: firstDoc?.documentId,
+      content: firstSeg?.content || ''
+    })
     ElMessage.success('已标记为已处理')
     showProcessDialog.value = false
     fetchStats()
@@ -750,7 +749,7 @@ onUnmounted(() => {
   border-left: 4px solid #409eff;
   padding: 6px 14px;
   margin: 10px 0;
-  background: rgba(64, 158, 255, 0.04);
+  background: rgba(64, 158, 258, 0.04);
   border-radius: 0 6px 6px 0;
   color: #606266;
 }

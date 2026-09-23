@@ -10,7 +10,8 @@ const renderer = {
     }
     const alt = text || ''
     const titleAttr = title ? ` title="${title}"` : ''
-    return `<img src="${src}" alt="${alt}"${titleAttr} style="max-width:100%;border-radius:6px;cursor:pointer;" onerror="this.style.display='none';this.parentElement.insertAdjacentHTML('beforeend','<div style=&quot;background:#f0f0f0;padding:12px;border-radius:6px;color:#999;font-size:12px;&quot;>[图片加载失败]</div>')" />`
+    // 注：onerror 等事件属性会被 DOMPurify 移除，无需拼接；加载失败时由浏览器默认处理
+    return `<img src="${src}" alt="${alt}"${titleAttr} style="max-width:100%;border-radius:6px;cursor:pointer;" />`
   }
 }
 
@@ -38,8 +39,8 @@ function preprocessMarkdown(text: string, closeCodeBlock: boolean): string {
   processed = processed.replace(/^(#{1,6})([^\s#\n])/gm, '$1 $2')
   // 5. 处理不完整的代码块
   if (closeCodeBlock) {
-    const codeBlockCount = (processed.match(/```/g) || []).length
-    if (codeBlockCount % 2 !== 0) {
+    const codeBlockCount = (processed.match(/```/g) || [])
+    if (codeBlockCount.length % 2 !== 0) {
       processed += '\n```'
     }
   }

@@ -10,7 +10,7 @@ export function register(data: { username: string; password: string }) {
   return request.post('/auth/register', data)
 }
 
-// 退出登录
+// 退出
 export function logout() {
   return request.post('/auth/logout')
 }
@@ -231,12 +231,12 @@ export function deleteOperLog(id: number) {
 
 // 批量删除操作日志
 export function batchDeleteOperLogs(ids: number[]) {
-  return request.delete('/system/log/batch', { data: ids })
+  return request.delete(`/system/log/batch`, { data: ids })
 }
 
 // 清空所有操作日志
 export function clearOperLogs() {
-  return request.delete('/system/log/clear')
+  return request.delete(`/system/log/clear`)
 }
 
 // 获取系统配置
@@ -365,10 +365,11 @@ export function getChatFeedbackDetail(id: number) {
 
 export function processChatFeedback(data: {
   chatFeedbackId: number
-  segmentId: string
-  datasetId: string
-  documentId: string
-  content: string
+  // 仅标记已处理（无命中文档/分段）时以下参数可不传
+  segmentId?: string
+  datasetId?: string
+  documentId?: string
+  content?: string
 }) {
   return request.put('/chat-feedback/process', data)
 }

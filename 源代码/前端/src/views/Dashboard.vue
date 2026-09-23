@@ -145,13 +145,15 @@ const fetchStats = async () => {
 
 const initCharts = () => {
   if (trendChartRef.value) {
-    trendChart = echarts.init(trendChartRef.value)
+    // 复用已有实例，避免重复 init 导致实例泄漏和控制台警告
+    trendChart = echarts.getInstanceByDom(trendChartRef.value) || echarts.init(trendChartRef.value)
 
     // 使用后端返回的检索趋势数据
     const searchTrend = stats.value.searchTrend || []
+    // 后端返回 yyyy-MM-dd，直接拆分字符串，避免 new Date 按 UTC 解析造成时区错位
     const days = searchTrend.map((item: any) => {
-      const d = new Date(item.date)
-      return `${d.getMonth() + 1}/${d.getDate()}`
+      const parts = String(item.date).split('-')
+      return `${Number(parts[1])}/${Number(parts[2])}`
     })
     const searchData = searchTrend.map((item: any) => item.count)
 
