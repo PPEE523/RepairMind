@@ -63,6 +63,7 @@ CREATE TABLE repair_knowledge (
     symptom TEXT,
     solution TEXT,
     img_url VARCHAR(500),
+    images TEXT,
     equip_model VARCHAR(100),
     audit_status SMALLINT DEFAULT 0,
     upload_user_id BIGINT,
@@ -89,6 +90,24 @@ CREATE TABLE work_flow (
     create_user BIGINT,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- AI 生成的 SOP 流程；原 init-full.sql 遗漏此表。
+CREATE TABLE work_sop_flow (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    category VARCHAR(50) DEFAULT '其他',
+    source_document_id VARCHAR(100),
+    source_document_name VARCHAR(200),
+    dataset_id VARCHAR(100),
+    step_json TEXT NOT NULL,
+    total_steps INTEGER DEFAULT 0,
+    status VARCHAR(20) DEFAULT 'active',
+    create_user BIGINT,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_sop_flow_status ON work_sop_flow(status);
+CREATE INDEX idx_sop_flow_create_user ON work_sop_flow(create_user);
 
 COMMENT ON TABLE work_flow IS '标准化作业表';
 
@@ -148,6 +167,8 @@ CREATE TABLE search_history (
     equip_model VARCHAR(100),
     image_url VARCHAR(500),
     image_urls TEXT,
+    file_types VARCHAR(500),
+    file_names VARCHAR(1000),
     result_answer TEXT,
     search_success BOOLEAN DEFAULT TRUE,
     error_message VARCHAR(500),
@@ -245,8 +266,68 @@ CREATE TABLE work_execution (
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
 COMMENT ON TABLE work_execution IS '作业执行记录表';
+
+-- 对话和检索数据：看板登录后会立即查询 chat_history。
+CREATE TABLE chat_history (
+    id BIGSERIAL PRIMARY KEY,
+    conversation_id VARCHAR(64),
+    user_question TEXT NOT NULL,
+    device_model VARCHAR(128),
+    answer_content TEXT,
+    message_id VARCHAR(64),
+    status VARCHAR(20) DEFAULT 'success',
+    round_num INTEGER DEFAULT 1,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    user_id BIGINT
+);
+CREATE INDEX idx_chat_history_conversation_id ON chat_history(conversation_id);
+CREATE INDEX idx_chat_history_user_id ON chat_history(user_id);
+CREATE INDEX idx_chat_history_create_time ON chat_history(create_time);
+
+CREATE TABLE chat_feedback (
+    id BIGSERIAL PRIMARY KEY,
+    chat_history_id BIGINT NOT NULL,
+    feedback_status VARCHAR(20) NOT NULL DEFAULT 'pending',
+    feedback_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    user_id BIGINT
+);
+CREATE INDEX idx_chat_feedback_history_id ON chat_feedback(chat_history_id);
+
+CREATE TABLE chat_document_resource (
+    id BIGSERIAL PRIMARY KEY,
+    chat_history_id BIGINT NOT NULL,
+    dataset_id VARCHAR(64),
+    dataset_name VARCHAR(256),
+    document_id VARCHAR(64),
+    document_name VARCHAR(256),
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_chat_doc_resource_history_id ON chat_document_resource(chat_history_id);
+CREATE INDEX idx_chat_doc_resource_document_id ON chat_document_resource(document_id);
+
+CREATE TABLE chat_segment (
+    id BIGSERIAL PRIMARY KEY,
+    document_resource_id BIGINT NOT NULL,
+    segment_id VARCHAR(64),
+    content TEXT,
+    score DOUBLE PRECISION DEFAULT 0,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_chat_segment_doc_resource_id ON chat_segment(document_resource_id);
+CREATE INDEX idx_chat_segment_segment_id ON chat_segment(segment_id);
+
+CREATE TABLE chat_file (
+    id BIGSERIAL PRIMARY KEY,
+    chat_history_id BIGINT NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    file_size BIGINT,
+    file_type VARCHAR(20) NOT NULL,
+    dify_file_id VARCHAR(100),
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_chat_file_history ON chat_file(chat_history_id);
 
 -- ============================================
 -- 创建索引
@@ -280,7 +361,7 @@ INSERT INTO sys_role (role_name, role_code, description) VALUES
 
 -- 初始化管理员用户 (密码: Admin@123456 BCrypt加密)
 INSERT INTO sys_user (username, password, nickname, role_id, dept_id, status, password_update_time) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', '系统管理员', 1, 1, 1, NOW());
+('admin', '$2a$10$B4L.eM..tUNJzIXnUQeH..WL7GDDvDPv755hd89bH0h68eebPSmYS', '系统管理员', 1, 1, 1, NOW());
 
 -- 初始化设备数据
 INSERT INTO equipment_info (equip_type, equip_model, dept_id) VALUES
